@@ -136,6 +136,14 @@ function App() {
     window.ginger.addTask({ name, parentId: currentNode.id }).then(refresh);
   }
 
+  function renameFolder(id, name) {
+    window.ginger.renameNode(id, name).then(refresh);
+  }
+
+  function renameTaskName(id, name) {
+    window.ginger.renameTask(id, name).then(refresh);
+  }
+
   // Header text
   const headerEyebrow =
     level === 'root' ? '' :
@@ -162,6 +170,7 @@ function App() {
                     key={folder.id}
                     name={folder.name}
                     onClick={() => openFolder(folder.id)}
+                    onRename={(name) => renameFolder(folder.id, name)}
                   />
                 ))}
                 <AddRow
@@ -178,7 +187,12 @@ function App() {
               <h2 className="group-label">To do</h2>
               <motion.ul layout className="list">
                 {orderedTasks.map((task) => (
-                  <TaskRow key={task.id} task={task} onToggle={toggleTask} />
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onRename={(name) => renameTaskName(task.id, name)}
+                  />
                 ))}
                 <AddRow label="Add a task" onAdd={addTaskHere} />
               </motion.ul>

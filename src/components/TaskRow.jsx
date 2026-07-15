@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Circle, CheckCircle2 } from 'lucide-react';
+import EditableName from './EditableName.jsx';
 
-function TaskRow({ task, onToggle }) {
+function TaskRow({ task, onToggle, onRename }) {
   return (
     <motion.li
-      layout                                  // animate position changes automatically
+      layout
       transition={{ type: 'spring', stiffness: 500, damping: 40 }}
       className={`row row-task ${task.done ? 'row-task-done' : ''}`}
     >
@@ -24,7 +25,7 @@ function TaskRow({ task, onToggle }) {
           onClick={() => onToggle(task.id)}
         />
       )}
-      <span className="row-name">{task.name}</span>
+      <EditableName className="row-name" value={task.name} onSave={onRename}/>
     </motion.li>
   );
 }

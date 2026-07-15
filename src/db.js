@@ -92,4 +92,12 @@ function addTask({ name, parentId }) {
   return { id, name, parentId };
 }
 
-export { db, getTree, addNode, addTask };
+function renameNode(id, name) {
+  db.prepare(`UPDATE nodes SET name = ? WHERE id = ?`).run(name, id);
+}
+
+function renameTask(id, name) {
+  db.prepare(`UPDATE tasks SET name = ? WHERE id = ?`).run(name, id);
+}
+
+export { db, getTree, addNode, addTask, renameNode, renameTask };
