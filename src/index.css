@@ -1,8 +1,131 @@
+/* ---- Ginger design tokens ---- */
+:root {
+  --bg: #f0ece4;          /* soft stone (previous version's background) */
+  --surface: #f7f4ef;     /* rows slightly brighter than bg */
+  --text: #2a2820;        /* deep espresso-olive, the darker text you liked */
+  --text-soft: #857861;   /* Golden Sandalwood / Mocha — muted secondary */
+  --border: #ddd6ca;      /* warm hairline from the stone palette */
+  --accent: #48252f;      /* Plum Wine — accent borrowed from the new palette */
+  --radius: 10px;
+}
+
+/* ---- Reset-ish base ---- */
+* {
+  box-sizing: border-box;   /* padding/border count inside width, not added on */
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
-  margin: auto;
-  max-width: 38rem;
-  padding: 2rem;
+  background: var(--bg);
+  color: var(--text);
+  /* Native Mac font stack — crisp, zero loading */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Layout ---- */
+.app {
+  max-width: 640px;         /* keep content narrow = calm, readable */
+  margin: 0 auto;           /* centre it */
+  padding: 3rem 2rem;
+}
+
+/* ---- Header ---- */
+.area-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.area-title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;   /* tighten large text slightly = polished */
+  margin-top: 0.25rem;
+}
+
+/* ---- Groups (Sections / To do) ---- */
+.group {
+  margin-top: 2.5rem;
+}
+
+.group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 0.75rem;
+}
+
+.list {
+  list-style: none;          /* remove default bullets */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ---- Rows (shared) ---- */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+.row-name {
+  flex: 1;                   /* name takes remaining space, pushing chevron right */
+}
+
+/* ---- Folder rows (Sections) — navigable ---- */
+.row-folder {
+  cursor: pointer;
+}
+
+.row-folder .row-icon {
+  color: var(--accent);      /* folder icon carries the accent */
+}
+
+.row-chevron {
+  color: var(--text-soft);   /* subtle "go inside" cue */
+}
+
+/* ---- Task rows — checkable ---- */
+.row-check {
+  color: var(--text-soft);   /* empty circle = not done */
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ---- Checked task styling ---- */
+.row-check {
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.row-check-done {
+  color: var(--accent);   /* filled check goes Plum Wine */
+}
+
+/* The whole row when done: fade + strikethrough */
+.row-task-done {
+  opacity: 0.55;
+}
+
+.row-task-done .row-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-soft);
+}
+
+/* Smooth the fade + reorder */
+.row-task {
+  transition: opacity 0.2s ease;
 }
