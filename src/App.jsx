@@ -1,59 +1,129 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { areas } from './data.js';
 import AreaHeader from './components/AreaHeader.jsx';
 import FolderRow from './components/FolderRow.jsx';
 import TaskRow from './components/TaskRow.jsx';
-import { motion } from 'framer-motion';
-
-const sections = [
-  { id: 1, name: 'Semester 2' },
-  { id: 2, name: 'Semester 1' },
-];
+import Breadcrumb from './components/Breadcrumb.jsx';
 
 function App() {
-  // useState: React "remembers" this between re-renders.
-  // `tasks` is the current value; `setTasks` is how we change it.
-  // Each task now has a `done` flag.
-  const [tasks, setTasks] = useState([
-    { id: 1, name: 'Email tutor about extension', done: false },
-    { id: 2, name: 'Buy textbook for BIO201', done: false },
-    { id: 3, name: 'Renew library books', done: false },
-  ]);
+  // The whole dataset lives in state so we can toggle tasks anywhere in it.
+  const [data, setData] = useState(areas);
 
-  // Flip one task's done state. We build a NEW array (never mutate the old one)
-  // — React re-renders because setTasks gives it a new value.
-  function toggleTask(id) {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === id ? { ...task, done: !task.done } : task
-      )
-    );
+  // `path` = where we are. [] = Areas list. ['a1'] = inside Study.
+  // ['a1','s1'] = inside a Section. ['a1','s1','ss1'] = inside a Subsection.
+  const [path, setPath] = useState([]);
+
+  // --- Figure out what to display based on the path ---
+  // Walk down the tree following the path to find the "current" node.
+  let currentChildren = data;        // at root, children = the areas
+  let currentNode = null;            // the node we're "inside" (null at root)
+  let level = 'root';                // root | area | section | subsection
+  const trail = [];                  // breadcrumb pieces
+
+  if (path.length >= 1) {
+    currentNode = data.find((a) => a.id === path[0]);
+    trail.push({ id: currentNode.id, name: currentNode.name });
+    level = 'area';
+  }
+  if (path.length >= 2) {
+    currentNode = currentNode.sections.find((s) => s.id === path[1]);
+    trail.push({ id: currentNode.id, name: currentNode.name });
+    level = 'section';
+  }
+  if (path.length >= 3) {
+    currentNode = currentNode.subsections.find((ss) => ss.id === path[2]);
+    trail.push({ id: currentNode.id, name: currentNode.name });
+    level = 'subsection';
   }
 
-  // Sort so undone tasks stay on top and done ones drift to the bottom.
-  // We copy with [...tasks] first so we don't mutate state directly.
+  // What folders show at this level?
+  let folders = [];
+  let folderLabel = '';
+  if (level === 'root') {
+    folders = data;
+    folderLabel = 'Areas';
+  } else if (level === 'area') {
+    folders = currentNode.sections;
+    folderLabel = 'Sections';
+  } else if (level === 'section') {
+    folders = currentNode.subsections;
+    folderLabel = 'Subsections';
+  }
+  // Subsection level has no child folders — tasks only.
+
+  // What tasks show? Root has none; otherwise the current node's tasks.
+  const tasks = level === 'root' ? [] : currentNode.tasks;
   const orderedTasks = [...tasks].sort((a, b) => a.done - b.done);
+
+  // --- Navigation ---
+  function openFolder(id) {
+    setPath([...path, id]);   // drill in: add to the path
+  }
+
+  function goToCrumb(depth) {
+    setPath(path.slice(0, depth));  // jump: trim path to that depth
+  }
+
+  // --- Toggling a task, wherever it lives in the tree ---
+  // We rebuild the tree, flipping the matching task's `done`.
+  function toggleTask(taskId) {
+    function flipInList(list) {
+      return list.map((t) =>
+        t.id === taskId ? { ...t, done: !t.done } : t
+      );
+    }
+    function walk(nodes, kind) {
+      return nodes.map((node) => {
+        const updated = { ...node, tasks: flipInList(node.tasks || []) };
+        if (updated.sections) updated.sections = walk(updated.sections);
+        if (updated.subsections) updated.subsections = walk(updated.subsections);
+        return updated;
+      });
+    }
+    setData((current) => walk(current));
+  }
+
+  // Header text
+  const headerEyebrow =
+    level === 'root' ? '' :
+    level === 'area' ? 'Area' :
+    level === 'section' ? 'Section' : 'Subsection';
+  const headerTitle = level === 'root' ? 'Home' : currentNode.name;
 
   return (
     <div className="app">
-      <AreaHeader eyebrow="Area" title="Study" />
+      <Breadcrumb trail={trail} onCrumbClick={goToCrumb} />
+      <AreaHeader eyebrow={headerEyebrow} title={headerTitle} />
 
-      <section className="group">
-        <h2 className="group-label">Sections</h2>
-        <ul className="list">
-          {sections.map((section) => (
-            <FolderRow key={section.id} name={section.name} />
-          ))}
-        </ul>
-      </section>
+      {folders.length > 0 && (
+        <section className="group">
+          <h2 className="group-label">{folderLabel}</h2>
+          <ul className="list">
+            {folders.map((folder) => (
+              <FolderRow
+                key={folder.id}
+                name={folder.name}
+                onClick={() => openFolder(folder.id)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
 
-      <section className="group">
-        <h2 className="group-label">To do</h2>
-        <motion.ul layout className="list">
-          {orderedTasks.map((task) => (
-            <TaskRow key={task.id} task={task} onToggle={toggleTask} />
-          ))}
-        </motion.ul>
-      </section>
+      {level !== 'root' && (
+        <section className="group">
+          <h2 className="group-label">To do</h2>
+          <motion.ul layout className="list">
+            {orderedTasks.map((task) => (
+              <TaskRow key={task.id} task={task} onToggle={toggleTask} />
+            ))}
+          </motion.ul>
+          {orderedTasks.length === 0 && (
+            <p className="empty">Nothing here yet.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

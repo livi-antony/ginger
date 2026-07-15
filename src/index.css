@@ -129,3 +129,54 @@ body {
 .row-task {
   transition: opacity 0.2s ease;
 }
+
+/* ---- Breadcrumb ---- */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  margin-bottom: 1.5rem;
+}
+
+.crumb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.crumb {
+  background: none;
+  border: none;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.crumb:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.crumb-sep {
+  color: var(--text-soft);
+  opacity: 0.5;
+}
+
+/* ---- Empty state ---- */
+.empty {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.25rem;
+}
+
+.crumb-home {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.35rem;
+}
