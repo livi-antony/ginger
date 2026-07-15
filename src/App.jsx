@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { areas } from './data.js';
+import AddButton from './components/AddButton.jsx';
+import AddInput from './components/AddInput.jsx';
+import AddRow from './components/AddRow.jsx';
 import AreaHeader from './components/AreaHeader.jsx';
+import Breadcrumb from './components/Breadcrumb.jsx';
 import FolderRow from './components/FolderRow.jsx';
 import TaskRow from './components/TaskRow.jsx';
-import Breadcrumb from './components/Breadcrumb.jsx';
 
 function App() {
   // The whole dataset lives in state so we can toggle tasks anywhere in it.
-  const [data, setData] = useState(areas);
+  const [data, setData] = useState([]);      // starts empty, filled from DB
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);   // is the input showing?
+  const [newName, setNewName] = useState('');    // what's typed so far
+
+  // Load (or reload) the whole tree from the database.
+  function refresh() {
+    return window.ginger.getTree().then((tree) => {
+      setData(tree);
+      setLoading(false);
+    });
+  }
+
+  // Fetch once when the app first loads.
+  useEffect(() => {
+    refresh();
+  }, []);
 
   // `path` = where we are. [] = Areas list. ['a1'] = inside Study.
   // ['a1','s1'] = inside a Section. ['a1','s1','ss1'] = inside a Subsection.
@@ -84,6 +102,40 @@ function App() {
     setData((current) => walk(current));
   }
 
+  // Save a new folder at the current level.
+  function saveNewFolder() {
+    const name = newName.trim();
+    if (!name) return;   // ignore empty names
+
+    // What type are we adding, based on where we are?
+    const type =
+      level === 'root' ? 'area' :
+      level === 'area' ? 'section' : 'subsection';
+
+    // Parent is the current node's id (or null at root for areas).
+    const parentId = level === 'root' ? null : currentNode.id;
+
+    window.ginger.addNode({ type, name, parentId }).then(() => {
+      setNewName('');       // clear the input
+      setAdding(false);     // hide the input
+      refresh();            // re-pull from DB so the new item appears
+    });
+  }
+
+  // Add a folder (area/section/subsection) at the current level.
+  function addFolder(name) {
+    const type =
+      level === 'root' ? 'area' :
+      level === 'area' ? 'section' : 'subsection';
+    const parentId = level === 'root' ? null : currentNode.id;
+    window.ginger.addNode({ type, name, parentId }).then(refresh);
+  }
+
+  // Add a task to the current node.
+  function addTaskHere(name) {
+    window.ginger.addTask({ name, parentId: currentNode.id }).then(refresh);
+  }
+
   // Header text
   const headerEyebrow =
     level === 'root' ? '' :
@@ -96,33 +148,43 @@ function App() {
       <Breadcrumb trail={trail} onCrumbClick={goToCrumb} />
       <AreaHeader eyebrow={headerEyebrow} title={headerTitle} />
 
-      {folders.length > 0 && (
-        <section className="group">
-          <h2 className="group-label">{folderLabel}</h2>
-          <ul className="list">
-            {folders.map((folder) => (
-              <FolderRow
-                key={folder.id}
-                name={folder.name}
-                onClick={() => openFolder(folder.id)}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {level !== 'root' && (
-        <section className="group">
-          <h2 className="group-label">To do</h2>
-          <motion.ul layout className="list">
-            {orderedTasks.map((task) => (
-              <TaskRow key={task.id} task={task} onToggle={toggleTask} />
-            ))}
-          </motion.ul>
-          {orderedTasks.length === 0 && (
-            <p className="empty">Nothing here yet.</p>
+      {loading ? (
+        <p className="empty">Loading…</p>
+      ) : (
+        <>
+          {/* Folder group — Areas / Sections / Subsections (not at subsection level) */}
+          {level !== 'subsection' && (
+            <section className="group">
+              <h2 className="group-label">{folderLabel}</h2>
+              <ul className="list">
+                {folders.map((folder) => (
+                  <FolderRow
+                    key={folder.id}
+                    name={folder.name}
+                    onClick={() => openFolder(folder.id)}
+                  />
+                ))}
+                <AddRow
+                  label={`Add ${folderLabel.slice(0, -1).toLowerCase()}`}
+                  onAdd={addFolder}
+                />
+              </ul>
+            </section>
           )}
-        </section>
+
+          {/* Task group — everywhere except the root */}
+          {level !== 'root' && (
+            <section className="group">
+              <h2 className="group-label">To do</h2>
+              <motion.ul layout className="list">
+                {orderedTasks.map((task) => (
+                  <TaskRow key={task.id} task={task} onToggle={toggleTask} />
+                ))}
+                <AddRow label="Add a task" onAdd={addTaskHere} />
+              </motion.ul>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

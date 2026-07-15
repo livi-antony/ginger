@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 const Database = require('better-sqlite3');
 const path = require('node:path');
 const { app } = require('electron');
@@ -33,4 +35,61 @@ db.exec(`
   );
 `);
 
-module.exports = { db };
+// Read everything and rebuild the nested tree the UI expects.
+function getTree() {
+  // Pull all rows (skip archived for now).
+  const nodes = db.prepare(
+    `SELECT * FROM nodes WHERE archived = 0 ORDER BY position, name`
+  ).all();
+  const tasks = db.prepare(
+    `SELECT * FROM tasks ORDER BY position`
+  ).all();
+
+  // Helper: get tasks belonging to a given node id, as {id, name, done}.
+  const tasksFor = (nodeId) =>
+    tasks
+      .filter((t) => t.parent_id === nodeId)
+      .map((t) => ({ id: t.id, name: t.name, done: t.done === 1 }));
+
+  // Helper: get child nodes of a given parent (or top-level areas if null).
+  const childrenOf = (parentId, type) =>
+    nodes.filter((n) => n.parent_id === parentId && n.type === type);
+
+  // Build areas → sections → subsections, attaching tasks at each level.
+  const areas = childrenOf(null, 'area').map((area) => ({
+    id: area.id,
+    name: area.name,
+    tasks: tasksFor(area.id),
+    sections: childrenOf(area.id, 'section').map((section) => ({
+      id: section.id,
+      name: section.name,
+      tasks: tasksFor(section.id),
+      subsections: childrenOf(section.id, 'subsection').map((sub) => ({
+        id: sub.id,
+        name: sub.name,
+        tasks: tasksFor(sub.id),
+      })),
+    })),
+  }));
+
+  return areas;
+}
+
+// Create a new node (area/section/subsection) and return it.
+function addNode({ type, name, parentId = null }) {
+  const id = randomUUID();
+  db.prepare(
+    `INSERT INTO nodes (id, type, name, parent_id) VALUES (?, ?, ?, ?)`
+  ).run(id, type, name, parentId);
+  return { id, type, name, parentId };
+}
+
+function addTask({ name, parentId }) {
+  const id = randomUUID();
+  db.prepare(
+    `INSERT INTO tasks (id, name, parent_id) VALUES (?, ?, ?)`
+  ).run(id, name, parentId);
+  return { id, name, parentId };
+}
+
+export { db, getTree, addNode, addTask };

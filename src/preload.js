@@ -1,2 +1,7 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('ginger', {
+  getTree: () => ipcRenderer.invoke('get-tree'),
+  addNode: (payload) => ipcRenderer.invoke('add-node', payload),
+  addTask: (payload) => ipcRenderer.invoke('add-task', payload),
+});
