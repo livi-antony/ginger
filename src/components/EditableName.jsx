@@ -1,39 +1,34 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// forwardRef lets a parent hold a ref to this component.
-const EditableName = forwardRef(({ value, onSave, className }, ref) => {
-  const [editing, setEditing] = useState(false);
+// `editing` is controlled by the parent. Calls onStopEdit when done.
+function EditableName({ value, editing, onSave, onStopEdit, onStartEdit, className }) {
   const [draft, setDraft] = useState(value);
 
-  // Expose startEditing() to the parent via the ref.
-  useImperativeHandle(ref, () => ({
-    startEditing: () => {
-      setDraft(value);
-      setEditing(true);
-    },
-  }));
+  // Reset the draft each time we enter edit mode.
+  useEffect(() => {
+    if (editing) setDraft(value);
+  }, [editing, value]);
 
   function commit() {
     const trimmed = draft.trim();
     if (trimmed && trimmed !== value) onSave(trimmed);
-    else setDraft(value);
-    setEditing(false);
+    onStopEdit();
   }
 
   if (editing) {
     return (
       <input
-        className="name-input"
+        className={`name-input ${className || ''}`}
         autoFocus
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+          if (e.key === 'Escape') onStopEdit();
         }}
         onBlur={commit}
         onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}   // don't start a hold on the input
+        onMouseDown={(e) => e.stopPropagation()}
       />
     );
   }
@@ -41,15 +36,11 @@ const EditableName = forwardRef(({ value, onSave, className }, ref) => {
   return (
     <span
       className={className}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        setDraft(value);
-        setEditing(true);
-      }}
+      onDoubleClick={(e) => { e.stopPropagation(); onStartEdit(); }}
     >
       {value}
     </span>
   );
-});
+}
 
 export default EditableName;

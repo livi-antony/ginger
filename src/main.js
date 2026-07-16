@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { db, getTree, addNode, addTask, renameNode, renameTask } from './db.js';
+import { db, getTree, addNode, addTask, renameNode, renameTask, archiveNode, deleteNode, deleteTask } from './db.js';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -38,6 +38,9 @@ app.whenReady().then(() => {
   ipcMain.handle('add-task', (event, payload) => addTask(payload));
   ipcMain.handle('rename-node', (event, { id, name }) => renameNode(id, name));
   ipcMain.handle('rename-task', (event, { id, name }) => renameTask(id, name));
+  ipcMain.handle('archive-node', (event, id) => archiveNode(id));
+  ipcMain.handle('delete-node', (event, id) => deleteNode(id));
+  ipcMain.handle('delete-task', (event, id) => deleteTask(id));
 
   createWindow();
 

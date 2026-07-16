@@ -7,6 +7,9 @@ import AreaHeader from './components/AreaHeader.jsx';
 import Breadcrumb from './components/Breadcrumb.jsx';
 import FolderRow from './components/FolderRow.jsx';
 import TaskRow from './components/TaskRow.jsx';
+import ContextMenu from './components/ContextMenu.jsx';
+import ConfirmDialog from './components/ConfirmDialog.jsx';
+import { Pencil, Archive, Trash2 } from 'lucide-react';
 
 function App() {
   // The whole dataset lives in state so we can toggle tasks anywhere in it.
@@ -14,6 +17,13 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);   // is the input showing?
   const [newName, setNewName] = useState('');    // what's typed so far
+  const [menu, setMenu] = useState(null);      // { x, y, kind, id, name } or null
+  const [confirm, setConfirm] = useState(null); // { message, onConfirm } or null
+  const [editingId, setEditingId] = useState(null);   // id of item being renamed
+
+  function startEdit(kind, id) {
+    setEditingId(id);
+  }
 
   // Load (or reload) the whole tree from the database.
   function refresh() {
@@ -144,6 +154,26 @@ function App() {
     window.ginger.renameTask(id, name).then(refresh);
   }
 
+  function archiveFolder(id) {
+    window.ginger.archiveNode(id).then(refresh);
+  }
+  function deleteFolder(id, name) {
+    setConfirm({
+      message: `Delete "${name}" and everything inside it?`,
+      onConfirm: () => window.ginger.deleteNode(id).then(() => { setConfirm(null); refresh(); }),
+    });
+  }
+  function deleteTaskItem(id) {
+    window.ginger.deleteTask(id).then(refresh);
+  }
+
+  // Build the menu items depending on what was right-clicked.
+  function openMenu(e, kind, id, name) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu({ x: e.clientX, y: e.clientY, kind, id, name });
+  }
+
   // Header text
   const headerEyebrow =
     level === 'root' ? '' :
@@ -154,7 +184,15 @@ function App() {
   return (
     <div className="app">
       <Breadcrumb trail={trail} onCrumbClick={goToCrumb} />
-      <AreaHeader eyebrow={headerEyebrow} title={headerTitle} />
+      <AreaHeader
+        eyebrow={headerEyebrow}
+        title={headerTitle}
+        nodeId={level === 'root' ? null : currentNode.id}
+        isEditing={level !== 'root' && editingId === currentNode.id}
+        onSave={(name) => renameFolder(currentNode.id, name)}
+        onStartEdit={() => setEditingId(currentNode.id)}
+        onStopEdit={() => setEditingId(null)}
+      />
 
       {loading ? (
         <p className="empty">Loading…</p>
@@ -171,6 +209,10 @@ function App() {
                     name={folder.name}
                     onClick={() => openFolder(folder.id)}
                     onRename={(name) => renameFolder(folder.id, name)}
+                    onContextMenu={(e) => openMenu(e, 'folder', folder.id, folder.name)}
+                    isEditing={editingId === folder.id}
+                    onStartEdit={() => setEditingId(folder.id)}
+                    onStopEdit={() => setEditingId(null)}
                   />
                 ))}
                 <AddRow
@@ -192,6 +234,10 @@ function App() {
                     task={task}
                     onToggle={toggleTask}
                     onRename={(name) => renameTaskName(task.id, name)}
+                    onContextMenu={(e) => openMenu(e, 'task', task.id, task.name)}
+                    isEditing={editingId === task.id}
+                    onStartEdit={() => setEditingId(task.id)}
+                    onStopEdit={() => setEditingId(null)}
                   />
                 ))}
                 <AddRow label="Add a task" onAdd={addTaskHere} />
@@ -199,6 +245,44 @@ function App() {
             </section>
           )}
         </>
+      )}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            {
+              label: 'Edit',
+              icon: <Pencil size={15} />,
+              onClick: () => startEdit(menu.kind, menu.id),
+            },
+            ...(menu.kind === 'folder'
+              ? [{
+                  label: 'Archive',
+                  icon: <Archive size={15} />,
+                  onClick: () => archiveFolder(menu.id),
+                }]
+              : []),
+            {
+              label: 'Delete',
+              icon: <Trash2 size={15} />,
+              danger: true,
+              onClick: () =>
+                menu.kind === 'folder'
+                  ? deleteFolder(menu.id, menu.name)
+                  : deleteTaskItem(menu.id),
+            },
+          ]}
+        />
+      )}
+
+      {confirm && (
+        <ConfirmDialog
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
       )}
     </div>
   );

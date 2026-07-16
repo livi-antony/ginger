@@ -79,10 +79,6 @@ body {
   font-size: 0.95rem;
 }
 
-.row-name {
-  flex: 1;
-}
-
 /* ---- Folder rows ---- */
 .row-folder {
   cursor: pointer;
@@ -211,13 +207,151 @@ body {
   padding: 0.5rem 0.25rem;
 }
 
-.name-input {
+.row-name {
   flex: 1;
+  font-size: 0.95rem;
+  border-bottom: 1px solid transparent;
+}
+
+/* ---- Context menu ---- */
+.context-menu {
+  position: fixed;
+  z-index: 100;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 0.3rem;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.context-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.context-item-danger {
+  color: #ff9b9b;
+}
+
+/* ---- Confirm dialog ---- */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 320px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-message {
+  font-size: 0.95rem;
+  margin-bottom: 1.2rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialog-btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.dialog-btn:hover {
+  background: var(--surface);
+}
+
+.dialog-btn-danger {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dialog-btn-danger:hover {
+  opacity: 0.9;
+  background: var(--accent);
+}
+
+.area-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* When the title is an EditableName span, keep it sized like the h1 */
+.area-title-row span.area-title {
+  margin-top: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.title-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
   border: none;
   background: none;
-  outline: none;
+  color: var(--text-soft);
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.title-edit-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.name-input {
+  flex: 1;
   font-family: inherit;
-  font-size: 0.95rem;
   color: var(--text);
   padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--text-soft);
+  border-radius: 0;
+  outline: none;
+  line-height: inherit;
+  box-sizing: border-box;
 }

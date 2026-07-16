@@ -100,4 +100,30 @@ function renameTask(id, name) {
   db.prepare(`UPDATE tasks SET name = ? WHERE id = ?`).run(name, id);
 }
 
-export { db, getTree, addNode, addTask, renameNode, renameTask };
+function archiveNode(id) {
+  db.prepare(`UPDATE nodes SET archived = 1 WHERE id = ?`).run(id);
+}
+
+function deleteNode(id) {
+  // Delete the node, its descendant nodes, and all their tasks.
+  // Gather this node + all nodes beneath it.
+  const toDelete = [id];
+  let frontier = [id];
+  while (frontier.length) {
+    const children = db
+      .prepare(`SELECT id FROM nodes WHERE parent_id IN (${frontier.map(() => '?').join(',')})`)
+      .all(...frontier)
+      .map((r) => r.id);
+    toDelete.push(...children);
+    frontier = children;
+  }
+  const placeholders = toDelete.map(() => '?').join(',');
+  db.prepare(`DELETE FROM tasks WHERE parent_id IN (${placeholders})`).run(...toDelete);
+  db.prepare(`DELETE FROM nodes WHERE id IN (${placeholders})`).run(...toDelete);
+}
+
+function deleteTask(id) {
+  db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+}
+
+export { db, getTree, addNode, addTask, renameNode, renameTask, archiveNode, deleteNode, deleteTask };
