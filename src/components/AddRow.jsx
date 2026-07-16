@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 
-// A muted "ghost" row that adds an item to its group.
-// `label` = placeholder text (e.g. "Add a section"); `onAdd` = save function.
-function AddRow({ label, onAdd }) {
-  const [editing, setEditing] = useState(false);
+function AddRow({ label, onAdd, startOpen = false, onCancel }) {
+  const [editing, setEditing] = useState(startOpen);
   const [name, setName] = useState('');
 
   function save() {
@@ -12,11 +10,18 @@ function AddRow({ label, onAdd }) {
     if (trimmed) onAdd(trimmed);
     setName('');
     setEditing(false);
+    if (onCancel) onCancel();
+  }
+
+  function cancel() {
+    setName('');
+    setEditing(false);
+    if (onCancel) onCancel();
   }
 
   if (editing) {
     return (
-      <li className="row row-add row-add-editing">
+      <div className="row row-add row-add-editing">
         <Plus className="row-add-icon" size={18} strokeWidth={2} />
         <input
           className="row-add-input"
@@ -26,19 +31,19 @@ function AddRow({ label, onAdd }) {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') save();
-            if (e.key === 'Escape') { setName(''); setEditing(false); }
+            if (e.key === 'Escape') cancel();
           }}
           onBlur={save}
         />
-      </li>
+      </div>
     );
   }
 
   return (
-    <li className="row row-add" onClick={() => setEditing(true)}>
+    <div className="row row-add" onClick={() => setEditing(true)}>
       <Plus className="row-add-icon" size={18} strokeWidth={2} />
       <span className="row-add-label">{label}</span>
-    </li>
+    </div>
   );
 }
 

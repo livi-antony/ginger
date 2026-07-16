@@ -27,35 +27,47 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS tasks (
-    id           TEXT PRIMARY KEY,
-    name         TEXT NOT NULL,
-    done         INTEGER NOT NULL DEFAULT 0,
-    parent_id    TEXT NOT NULL,        -- which node it belongs to
-    position     INTEGER NOT NULL DEFAULT 0
+    id             TEXT PRIMARY KEY,
+    name           TEXT NOT NULL,
+    done           INTEGER NOT NULL DEFAULT 0,
+    parent_id      TEXT NOT NULL,
+    parent_task_id TEXT,
+    position       INTEGER NOT NULL DEFAULT 0
   );
 `);
 
+// Migration: add parent_task_id if an older tasks table lacks it.
+const taskCols = db.prepare(`PRAGMA table_info(tasks)`).all();
+if (!taskCols.some((c) => c.name === 'parent_task_id')) {
+  db.exec(`ALTER TABLE tasks ADD COLUMN parent_task_id TEXT`);
+}
+
 // Read everything and rebuild the nested tree the UI expects.
 function getTree() {
-  // Pull all rows (skip archived for now).
   const nodes = db.prepare(
     `SELECT * FROM nodes WHERE archived = 0 ORDER BY position, name`
   ).all();
-  const tasks = db.prepare(
-    `SELECT * FROM tasks ORDER BY position`
-  ).all();
+  const allTasks = db.prepare(`SELECT * FROM tasks ORDER BY position`).all();
 
-  // Helper: get tasks belonging to a given node id, as {id, name, done}.
+  // Recursively build a task and its subtasks.
+  const buildTask = (t) => ({
+    id: t.id,
+    name: t.name,
+    done: t.done === 1,
+    subtasks: allTasks
+      .filter((c) => c.parent_task_id === t.id)
+      .map(buildTask),
+  });
+
+  // Top-level tasks of a node = tasks with this parent_id and NO parent_task.
   const tasksFor = (nodeId) =>
-    tasks
-      .filter((t) => t.parent_id === nodeId)
-      .map((t) => ({ id: t.id, name: t.name, done: t.done === 1 }));
+    allTasks
+      .filter((t) => t.parent_id === nodeId && !t.parent_task_id)
+      .map(buildTask);
 
-  // Helper: get child nodes of a given parent (or top-level areas if null).
   const childrenOf = (parentId, type) =>
     nodes.filter((n) => n.parent_id === parentId && n.type === type);
 
-  // Build areas → sections → subsections, attaching tasks at each level.
   const areas = childrenOf(null, 'area').map((area) => ({
     id: area.id,
     name: area.name,
@@ -123,7 +135,60 @@ function deleteNode(id) {
 }
 
 function deleteTask(id) {
-  db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+  const cascade = (tid) => {
+    const kids = db.prepare(`SELECT id FROM tasks WHERE parent_task_id = ?`).all(tid);
+    for (const k of kids) cascade(k.id);
+    db.prepare(`DELETE FROM tasks WHERE id = ?`).run(tid);
+  };
+  cascade(id);
 }
 
-export { db, getTree, addNode, addTask, renameNode, renameTask, archiveNode, deleteNode, deleteTask };
+// Walk up from a task's parent, setting each ancestor done iff all its children are done.
+function rollUp(startParentId) {
+  let parentId = startParentId;
+  while (parentId) {
+    const siblings = db.prepare(`SELECT done FROM tasks WHERE parent_task_id = ?`).all(parentId);
+    const allDone = siblings.length > 0 && siblings.every((s) => s.done === 1);
+    db.prepare(`UPDATE tasks SET done = ? WHERE id = ?`).run(allDone ? 1 : 0, parentId);
+    const row = db.prepare(`SELECT parent_task_id FROM tasks WHERE id = ?`).get(parentId);
+    parentId = row ? row.parent_task_id : null;
+  }
+}
+
+function addSubtask({ name, parentId, parentTaskId }) {
+  const id = randomUUID();
+  db.prepare(
+    `INSERT INTO tasks (id, name, parent_id, parent_task_id) VALUES (?, ?, ?, ?)`
+  ).run(id, name, parentId, parentTaskId);
+
+  // A new subtask is incomplete, so its parent (and ancestors) can't be "all done".
+  // Re-run the roll-up from the new subtask to fix any now-stale completed parents.
+  rollUp(parentTaskId);
+
+  return { id };
+}
+
+// Set a task done/undone, cascade DOWN to all descendants,
+// then roll UP: any ancestor becomes done iff all its children are done.
+function setTaskDone(taskId, done) {
+  const doneVal = done ? 1 : 0;
+
+  // 1. Set this task.
+  db.prepare(`UPDATE tasks SET done = ? WHERE id = ?`).run(doneVal, taskId);
+
+  // 2. Cascade down to all descendants.
+  const cascade = (id) => {
+    const kids = db.prepare(`SELECT id FROM tasks WHERE parent_task_id = ?`).all(id);
+    for (const k of kids) {
+      db.prepare(`UPDATE tasks SET done = ? WHERE id = ?`).run(doneVal, k.id);
+      cascade(k.id);
+    }
+  };
+  cascade(taskId);
+
+  // 3. Roll up through ancestors.
+  const row = db.prepare(`SELECT parent_task_id FROM tasks WHERE id = ?`).get(taskId);
+  rollUp(row ? row.parent_task_id : null);
+}
+
+export { db, getTree, addNode, addTask, addSubtask, renameNode, renameTask, setTaskDone, archiveNode, deleteNode, deleteTask };

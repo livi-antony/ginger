@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AddButton from './components/AddButton.jsx';
 import AddInput from './components/AddInput.jsx';
 import AddRow from './components/AddRow.jsx';
@@ -20,6 +20,19 @@ function App() {
   const [menu, setMenu] = useState(null);      // { x, y, kind, id, name } or null
   const [confirm, setConfirm] = useState(null); // { message, onConfirm } or null
   const [editingId, setEditingId] = useState(null);   // id of item being renamed
+  const [addingSubtaskFor, setAddingSubtaskFor] = useState(null); // task id or null
+
+  function toggleTaskDone(task, done) {
+    window.ginger.setTaskDone(task.id, done).then(refresh);
+  }
+
+  function addSubtaskTo(taskName, parentTask) {
+    window.ginger.addSubtask({
+      name: taskName,
+      parentId: currentNode.id,
+      parentTaskId: parentTask.id,
+    }).then(() => { setAddingSubtaskFor(null); refresh(); });
+  }
 
   function startEdit(kind, id) {
     setEditingId(id);
@@ -176,7 +189,7 @@ function App() {
 
   // Header text
   const headerEyebrow =
-    level === 'root' ? '' :
+    level === 'root' ? 'Ginger' :
     level === 'area' ? 'Area' :
     level === 'section' ? 'Section' : 'Subsection';
   const headerTitle = level === 'root' ? 'Home' : currentNode.name;
@@ -228,18 +241,23 @@ function App() {
             <section className="group">
               <h2 className="group-label">To do</h2>
               <motion.ul layout className="list">
-                {orderedTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTask}
-                    onRename={(name) => renameTaskName(task.id, name)}
-                    onContextMenu={(e) => openMenu(e, 'task', task.id, task.name)}
-                    isEditing={editingId === task.id}
-                    onStartEdit={() => setEditingId(task.id)}
-                    onStopEdit={() => setEditingId(null)}
-                  />
-                ))}
+                <AnimatePresence>
+                  {orderedTasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onToggle={toggleTaskDone}
+                      onRename={renameTaskName}
+                      onContextMenu={(e, t) => openMenu(e, 'task', t.id, t.name)}
+                      editingId={editingId}
+                      setEditingId={setEditingId}
+                      onAddSubtask={(t) => setAddingSubtaskFor(t.id)}
+                      addingSubtaskFor={addingSubtaskFor}
+                      onSaveSubtask={addSubtaskTo}
+                      onCancelSubtask={() => setAddingSubtaskFor(null)}
+                    />
+                  ))}
+                </AnimatePresence>
                 <AddRow label="Add a task" onAdd={addTaskHere} />
               </motion.ul>
             </section>

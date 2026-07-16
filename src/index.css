@@ -1,11 +1,11 @@
 /* ---- Ginger design tokens ---- */
 :root {
-  --bg: #f0ece4;          /* soft stone background */
-  --surface: #f7f4ef;     /* rows, slightly brighter than bg */
-  --text: #2a2820;        /* deep espresso-olive */
-  --text-soft: #857861;   /* muted secondary (Mocha) */
-  --border: #ddd6ca;      /* warm hairline */
-  --accent: #48252f;      /* Plum Wine accent */
+  --bg: #f0ece4;
+  --surface: #f7f4ef;
+  --text: #2a2820;
+  --text-soft: #857861;
+  --border: #ddd6ca;
+  --accent: #48252f;
   --radius: 10px;
 }
 
@@ -43,7 +43,37 @@ body {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.area-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.25rem;
+}
+
+.area-title-row span.area-title {
+  margin-top: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.title-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  border: none;
+  background: none;
+  color: var(--text-soft);
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.title-edit-btn:hover {
+  opacity: 1;
+  color: var(--accent);
 }
 
 /* ---- Groups ---- */
@@ -79,6 +109,16 @@ body {
   font-size: 0.95rem;
 }
 
+.row-task {
+  gap: 0;
+}
+
+.row-name {
+  flex: 1;
+  font-size: 0.95rem;
+  border-bottom: 1px solid transparent;
+}
+
 /* ---- Folder rows ---- */
 .row-folder {
   cursor: pointer;
@@ -92,9 +132,41 @@ body {
   color: var(--text-soft);
 }
 
-/* ---- Task rows ---- */
+/* ---- Task cards ---- */
+/* The task <li> is always a container; padding lives on .task-line */
 .row-task {
+  padding: 0;
+  flex-direction: column;
+  align-items: stretch;
   transition: opacity 0.2s ease;
+}
+
+.task-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  flex: 0 0 auto;
+}
+
+/* Subtask lines: indented, divider above */
+.task-line-sub {
+  padding-left: 2.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.subtask-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-line-done {
+  opacity: 0.55;
+}
+
+.task-line-done .row-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-soft);
 }
 
 .row-check {
@@ -108,13 +180,30 @@ body {
   color: var(--accent);
 }
 
-.row-task-done {
-  opacity: 0.55;
+.subtask-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  border: none;
+  background: none;
+  color: var(--text-soft);
+  cursor: pointer;
+  border-radius: 5px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
-.row-task-done .row-name {
-  text-decoration: line-through;
-  text-decoration-color: var(--text-soft);
+.subtask-add-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.task-progress {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  flex-shrink: 0;
 }
 
 /* ---- Ghost add-row ---- */
@@ -129,7 +218,6 @@ body {
   opacity: 1;
 }
 
-/* Editing state: full opacity, no border */
 .row.row-add-editing {
   opacity: 1;
 }
@@ -154,6 +242,15 @@ body {
 
 .row-add-input::placeholder {
   color: var(--text-soft);
+}
+
+/* Add-subtask row inside a task card */
+.task-line .row-add {
+  border: none;
+  background: none;
+  padding: 0;
+  opacity: 0.7;
+  flex: 1;
 }
 
 /* ---- Breadcrumb ---- */
@@ -200,17 +297,20 @@ body {
   opacity: 0.5;
 }
 
-/* ---- Misc ---- */
-.empty {
-  color: var(--text-soft);
-  font-size: 0.9rem;
-  padding: 0.5rem 0.25rem;
-}
-
-.row-name {
+/* ---- Editable name input ---- */
+.name-input {
   flex: 1;
-  font-size: 0.95rem;
-  border-bottom: 1px solid transparent;
+  font-family: inherit;
+  color: var(--text);
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--text-soft);
+  border-radius: 0;
+  outline: none;
+  line-height: inherit;
+  box-sizing: border-box;
 }
 
 /* ---- Context menu ---- */
@@ -309,49 +409,13 @@ body {
   background: var(--accent);
 }
 
-.area-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-/* When the title is an EditableName span, keep it sized like the h1 */
-.area-title-row span.area-title {
-  margin-top: 0;
-  border-bottom: 2px solid transparent;
-}
-
-.title-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.3rem;
-  border: none;
-  background: none;
+/* ---- Misc ---- */
+.empty {
   color: var(--text-soft);
-  cursor: pointer;
-  border-radius: 6px;
-  opacity: 0.6;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.25rem;
 }
 
-.title-edit-btn:hover {
-  opacity: 1;
-  color: var(--accent);
-}
-
-.name-input {
-  flex: 1;
-  font-family: inherit;
-  color: var(--text);
-  padding: 0;
-  margin: 0;
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--text-soft);
-  border-radius: 0;
-  outline: none;
-  line-height: inherit;
-  box-sizing: border-box;
+.row-task {
+  justify-content: flex-start;
 }

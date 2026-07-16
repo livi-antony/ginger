@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('ginger', {
   archiveNode: (id) => ipcRenderer.invoke('archive-node', id),
   deleteNode: (id) => ipcRenderer.invoke('delete-node', id),
   deleteTask: (id) => ipcRenderer.invoke('delete-task', id),
+  addSubtask: (payload) => ipcRenderer.invoke('add-subtask', payload),
+  setTaskDone: (id, done) => ipcRenderer.invoke('set-task-done', { id, done }),
 });
