@@ -34,6 +34,7 @@ function TaskRow({
         onSave={(name) => onRenameLine(t.id, name)}
         onStartEdit={() => setEditingId(t.id)}
         onStopEdit={() => setEditingId(null)}
+        clickToEdit={!t.done}
       />
       {!isSub && hasSubs && (
         <span className="task-progress">{doneCount}/{subtasks.length}</span>

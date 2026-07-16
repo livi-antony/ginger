@@ -181,10 +181,10 @@ function App() {
   }
 
   // Build the menu items depending on what was right-clicked.
-  function openMenu(e, kind, id, name) {
+  function openMenu(e, kind, id, name, done = false) {
     e.preventDefault();
     e.stopPropagation();
-    setMenu({ x: e.clientX, y: e.clientY, kind, id, name });
+    setMenu({ x: e.clientX, y: e.clientY, kind, id, name, done });
   }
 
   // Header text
@@ -248,7 +248,7 @@ function App() {
                       task={task}
                       onToggle={toggleTaskDone}
                       onRename={renameTaskName}
-                      onContextMenu={(e, t) => openMenu(e, 'task', t.id, t.name)}
+                      onContextMenu={(e, t) => openMenu(e, 'task', t.id, t.name, t.done)}
                       editingId={editingId}
                       setEditingId={setEditingId}
                       onAddSubtask={(t) => setAddingSubtaskFor(t.id)}
@@ -270,11 +270,13 @@ function App() {
           y={menu.y}
           onClose={() => setMenu(null)}
           items={[
-            {
-              label: 'Edit',
-              icon: <Pencil size={15} />,
-              onClick: () => startEdit(menu.kind, menu.id),
-            },
+            ...(!(menu.kind === 'task' && menu.done)
+              ? [{
+                  label: 'Edit',
+                  icon: <Pencil size={15} />,
+                  onClick: () => startEdit(menu.kind, menu.id),
+                }]
+              : []),
             ...(menu.kind === 'folder'
               ? [{
                   label: 'Archive',

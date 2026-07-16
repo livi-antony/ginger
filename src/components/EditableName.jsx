@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // `editing` is controlled by the parent. Calls onStopEdit when done.
-function EditableName({ value, editing, onSave, onStopEdit, onStartEdit, className }) {
+function EditableName({ value, editing, onSave, onStopEdit, onStartEdit, className, clickToEdit }) {
   const [draft, setDraft] = useState(value);
 
   // Reset the draft each time we enter edit mode.
@@ -36,7 +36,7 @@ function EditableName({ value, editing, onSave, onStopEdit, onStartEdit, classNa
   return (
     <span
       className={className}
-      onDoubleClick={(e) => { e.stopPropagation(); onStartEdit(); }}
+      onClick={clickToEdit ? (e) => { e.stopPropagation(); onStartEdit(); } : undefined}
     >
       {value}
     </span>
